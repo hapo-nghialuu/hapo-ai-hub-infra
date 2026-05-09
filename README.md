@@ -15,7 +15,10 @@ This repo contains Docker Compose configs, Nginx setup, and deployment scripts. 
 git clone https://github.com/hapo-nghialuu/hapo-ai-hub-infra.git
 cd hapo-ai-hub-infra
 
-# 2. Setup config
+# 2. Setup config (interactive wizard)
+./scripts/setup-env.sh
+
+# Or manually:
 cp .env.example .env
 vi .env  # Fill in your values
 
@@ -69,6 +72,7 @@ hapo-ai-hub-infra/
 │       └── init.sql
 ├── scripts/
 │   ├── setup-server.sh         # Prepare fresh server
+│   ├── setup-env.sh            # Interactive .env wizard
 │   ├── deploy.sh               # Deploy services
 │   ├── upgrade.sh              # Upgrade versions
 │   └── backup.sh               # Backup databases

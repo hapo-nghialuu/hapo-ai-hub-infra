@@ -28,17 +28,18 @@ check_prerequisites() {
 # ─── Check .env ────────────────────────────────────────────────
 check_env() {
     if [ ! -f "$PROJECT_DIR/.env" ]; then
-        cp "$PROJECT_DIR/.env.example" "$PROJECT_DIR/.env"
-        warn "Created .env from template. Please edit it with actual values:"
-        warn "  vi $PROJECT_DIR/.env"
-        exit 0
+        warn ".env not found. Running setup wizard..."
+        bash "$PROJECT_DIR/scripts/setup-env.sh"
+        return
     fi
 
-    # Verify critical values
+    # Verify critical values are not still defaults
     local domain
     domain=$(grep "^DOMAIN=" "$PROJECT_DIR/.env" | cut -d= -f2 | tr -d ' "')
     if [ "$domain" = "partner.example.com" ] || [ -z "$domain" ]; then
-        warn "DOMAIN not configured in .env"
+        warn "DOMAIN not configured in .env. Running setup wizard..."
+        bash "$PROJECT_DIR/scripts/setup-env.sh"
+        return
     fi
 
     log ".env ready"

@@ -82,6 +82,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

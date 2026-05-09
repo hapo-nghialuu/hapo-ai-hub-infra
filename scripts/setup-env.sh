@@ -130,6 +130,11 @@ CLIPROXY_API_KEY=$(prompt_secret "CLIPROXY_API_KEY" "Cliproxy API key" "$(genera
 CLIPROXY_MANAGEMENT_SECRET=$(prompt_secret "CLIPROXY_MANAGEMENT_SECRET" "Cliproxy management secret" "$(generate_secret 24)")
 echo ""
 
+# ─── Google OAuth ─────────────────────────────────────────────
+echo -e "${YELLOW}── Google OAuth (optional, press Enter to skip) ──────${NC}"
+GOOGLE_CLIENT_ID=$(prompt "GOOGLE_CLIENT_ID" "Google Client ID" "")
+echo ""
+
 # ─── Provider API Keys ────────────────────────────────────────
 echo -e "${YELLOW}── Provider API Keys (optional, press Enter to skip) ──${NC}"
 OPENROUTER_API_KEY=$(prompt "OPENROUTER_API_KEY" "OpenRouter API key" "")
@@ -187,6 +192,9 @@ GO_GATEWAY_CLIPROXY_EXECUTION_BASE_URL=http://cliproxy:8317
 GO_GATEWAY_CLIPROXY_EXECUTION_API_KEY=\${CLIPROXY_API_KEY}
 GO_GATEWAY_CLIPROXY_MANAGEMENT_BASE_URL=http://cliproxy:8317
 GO_GATEWAY_CLIPROXY_MANAGEMENT_AUTH=\${CLIPROXY_MANAGEMENT_SECRET}
+
+# ─── Google OAuth ─────────────────────────────────────────────
+GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 
 # ─── Provider API Keys ────────────────────────────────────────
 OPENROUTER_API_KEY=$OPENROUTER_API_KEY

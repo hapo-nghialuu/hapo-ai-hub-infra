@@ -3,11 +3,9 @@ set -euo pipefail
 
 # ═══════════════════════════════════════════════════════════════
 # hapo-ai-hub Deploy Script
-# Usage: ./scripts/deploy.sh [customer-name]
-# Example: ./scripts/deploy.sh customer-a
+# Usage: ./scripts/deploy.sh
 # ═══════════════════════════════════════════════════════════════
 
-CUSTOMER="${1:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -27,37 +25,23 @@ check_prerequisites() {
     log "Docker & Compose ready"
 }
 
-# ─── Setup customer config ────────────────────────────────────
-setup_customer() {
-    local customer_dir="$PROJECT_DIR/customers/$CUSTOMER"
-
-    if [ -z "$CUSTOMER" ]; then
-        warn "No customer specified. Using root .env"
-        if [ ! -f "$PROJECT_DIR/.env" ]; then
-            cp "$PROJECT_DIR/.env.example" "$PROJECT_DIR/.env"
-            warn "Created .env from template. Please edit it with actual values."
-            exit 0
-        fi
-        return
+# ─── Check .env ────────────────────────────────────────────────
+check_env() {
+    if [ ! -f "$PROJECT_DIR/.env" ]; then
+        cp "$PROJECT_DIR/.env.example" "$PROJECT_DIR/.env"
+        warn "Created .env from template. Please edit it with actual values:"
+        warn "  vi $PROJECT_DIR/.env"
+        exit 0
     fi
 
-    if [ ! -d "$customer_dir" ]; then
-        error "Customer directory not found: $customer_dir"
+    # Verify critical values
+    local domain
+    domain=$(grep "^DOMAIN=" "$PROJECT_DIR/.env" | cut -d= -f2 | tr -d ' "')
+    if [ "$domain" = "partner.example.com" ] || [ -z "$domain" ]; then
+        warn "DOMAIN not configured in .env"
     fi
 
-    if [ ! -f "$customer_dir/.env" ]; then
-        error "Customer .env not found: $customer_dir/.env"
-    fi
-
-    # Symlink customer .env
-    ln -sf "$customer_dir/.env" "$PROJECT_DIR/.env"
-    log "Using config from customers/$CUSTOMER/.env"
-
-    # Copy nginx config if exists
-    if [ -f "$customer_dir/docker/nginx/default.conf.template" ]; then
-        cp "$customer_dir/docker/nginx/default.conf.template" "$PROJECT_DIR/docker/nginx/default.conf.template"
-        log "Using customer nginx config"
-    fi
+    log ".env ready"
 }
 
 # ─── Login GHCR ───────────────────────────────────────────────
@@ -155,12 +139,11 @@ health_check() {
 main() {
     echo "═══════════════════════════════════════════════════════"
     echo " hapo-ai-hub Deploy"
-    [ -n "$CUSTOMER" ] && echo " Customer: $CUSTOMER"
     echo "═══════════════════════════════════════════════════════"
     echo ""
 
     check_prerequisites
-    setup_customer
+    check_env
     login_ghcr
     pull_images
     setup_ssl

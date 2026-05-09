@@ -6,6 +6,8 @@ Infrastructure & deployment repository for hapo-ai-hub.
 
 This repo contains Docker Compose configs, Nginx setup, and deployment scripts. No source code here - Docker images are pulled from GitHub Container Registry (GHCR).
 
+**Each partner/customer clones this repo once and configures their own .env.**
+
 ## Quick Start
 
 ```bash
@@ -15,35 +17,41 @@ cd hapo-ai-hub-infra
 
 # 2. Setup config
 cp .env.example .env
-# Edit .env with your values
+vi .env  # Fill in your values
 
-# 3. Deploy
+# 3. Login GHCR
+export GHCR_TOKEN=your_github_token
+echo "$GHCR_TOKEN" | docker login ghcr.io -u hapo-nghialuu --password-stdin
+
+# 4. Deploy
 chmod +x scripts/*.sh
 ./scripts/deploy.sh
 ```
 
-## Deploy for Specific Customer
+## New Server Setup
+
+On a fresh Ubuntu server:
 
 ```bash
-# Use customer-specific config
-./scripts/deploy.sh customer-a
+curl -fsSL https://raw.githubusercontent.com/hapo-nghialuu/hapo-ai-hub-infra/main/scripts/setup-server.sh | bash
 ```
+
+This will:
+- Install Docker & Docker Compose
+- Configure firewall (ports 22, 80, 443)
+- Clone this repo
+- Generate random secrets for .env
 
 ## Upgrade Version
 
 ```bash
-# Upgrade all services to v1.0.5
 ./scripts/upgrade.sh v1.0.5
 ```
 
 ## Backup
 
 ```bash
-# Backup databases
 ./scripts/backup.sh
-
-# Backup to specific directory
-./scripts/backup.sh /backups
 ```
 
 ## Directory Structure
@@ -51,47 +59,21 @@ chmod +x scripts/*.sh
 ```
 hapo-ai-hub-infra/
 ├── docker-compose.yml          # Main orchestration
-├── .env.example                # Config template
-├── customers/                  # Per-customer configs
-│   ├── staging/
-│   │   ├── .env.example        # Template (git tracked)
-│   │   └── .env                # Actual secrets (git ignored)
-│   ├── customer-a/
-│   │   ├── .env.example
-│   │   └── .env
-│   └── customer-b/
-│       ├── .env.example
-│       └── .env
+├── .env.example                # Config template (copy to .env)
 ├── docker/
-│   ├── nginx/                  # Nginx reverse proxy
+│   ├── nginx/
 │   │   └── default.conf.template
-│   ├── cliproxy/               # CLIProxyAPI config
+│   ├── cliproxy/
 │   │   └── config.yaml
-│   └── mysql/                  # Database init
+│   └── mysql/
 │       └── init.sql
 ├── scripts/
-│   ├── deploy.sh               # Deploy to server
+│   ├── setup-server.sh         # Prepare fresh server
+│   ├── deploy.sh               # Deploy services
 │   ├── upgrade.sh              # Upgrade versions
 │   └── backup.sh               # Backup databases
 └── README.md
 ```
-
-## Customer Setup
-
-Each customer has their own config in `customers/<name>/`:
-
-```bash
-# 1. Copy template
-cp customers/customer-a/.env.example customers/customer-a/.env
-
-# 2. Edit with actual secrets
-vi customers/customer-a/.env
-
-# 3. Deploy for that customer
-./scripts/deploy.sh customer-a
-```
-
-**Note:** `.env` files are git-ignored (contain secrets). Only `.env.example` templates are tracked.
 
 ## Services
 

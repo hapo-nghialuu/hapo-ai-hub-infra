@@ -46,15 +46,18 @@ check_env() {
 
 # ─── Login GHCR ───────────────────────────────────────────────
 login_ghcr() {
-    if [ -z "${GHCR_TOKEN:-}" ]; then
-        warn "GHCR_TOKEN not set. Skipping GHCR login."
-        warn "Set it with: export GHCR_TOKEN=your_github_token"
+    local token
+    token=$(grep GHCR_TOKEN "$PROJECT_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d ' "' || echo "")
+
+    if [ -z "$token" ] || [ "$token" = "change-me-github-token" ]; then
+        warn "GHCR_TOKEN not configured in .env. Skipping GHCR login."
+        warn "Set it in .env: GHCR_TOKEN=ghp_xxx"
         return
     fi
 
     local owner
     owner=$(grep GHCR_OWNER "$PROJECT_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d ' "' || echo "hapo-nghialuu")
-    echo "$GHCR_TOKEN" | docker login ghcr.io -u "$owner" --password-stdin
+    echo "$token" | docker login ghcr.io -u "$owner" --password-stdin
     log "Logged in to GHCR"
 }
 

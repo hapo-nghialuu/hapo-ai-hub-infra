@@ -1,0 +1,22 @@
+# Environment files
+.env
+!.env.example
+
+# Customer configs (contain secrets)
+customers/**/.env
+!customers/**/.env.example
+
+# Backups
+backups/
+
+# Docker volumes
+mysql-data/
+redis-data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

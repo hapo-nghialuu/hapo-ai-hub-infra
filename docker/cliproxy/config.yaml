@@ -1,0 +1,28 @@
+# CLIProxyAPI Configuration
+# Docs: https://github.com/router-for-me/CLIProxyAPI
+
+host: "0.0.0.0"
+port: 8317
+
+remote-management:
+  allow-remote: true
+  secret-key: "${CLIPROXY_MANAGEMENT_SECRET}"
+  disable-control-panel: false
+
+auth-dir: "/CLIProxyAPI/auths"
+
+api-keys:
+  - "${CLIPROXY_API_KEY}"
+
+debug: false
+commercial-mode: false
+logging-to-file: false
+
+usage-statistics-enabled: false
+request-retry: 3
+max-retry-credentials: 0
+disable-cooling: false
+
+quota-exceeded:
+  switch-project: true
+  switch-preview-model: true

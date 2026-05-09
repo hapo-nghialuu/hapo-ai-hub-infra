@@ -1,0 +1,136 @@
+services:
+  # ─── Database ───────────────────────────────────────────────
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: api_gateway
+      MYSQL_USER: ${MYSQL_USER:-api_gateway}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - hapo-net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hapo-net
+
+  # ─── Application Services ───────────────────────────────────
+  cliproxy:
+    image: ghcr.io/${GHCR_OWNER:-hapo-nghialuu}/cliproxy:${CLIPROXY_VERSION:-latest}
+    restart: unless-stopped
+    volumes:
+      - ./docker/cliproxy/config.yaml:/CLIProxyAPI/config.yaml:ro
+      - cliproxy-auth:/CLIProxyAPI/auths
+    ports:
+      - "127.0.0.1:8317:8317"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8317/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - hapo-net
+
+  gateway:
+    image: ghcr.io/${GHCR_OWNER:-hapo-nghialuu}/gateway:${GATEWAY_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GO_GATEWAY_PORT: "18080"
+      GO_GATEWAY_ENV: production
+      GO_GATEWAY_MYSQL_DSN: ${MYSQL_USER:-api_gateway}:${MYSQL_PASSWORD}@tcp(mysql:3306)/api_gateway?parseTime=true&charset=utf8mb4&loc=Local
+    ports:
+      - "127.0.0.1:18080:18080"
+    depends_on:
+      cliproxy:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:18080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - hapo-net
+
+  portal:
+    image: ghcr.io/${GHCR_OWNER:-hapo-nghialuu}/portal:${PORTAL_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://0.0.0.0:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - hapo-net
+
+  # ─── Reverse Proxy ──────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - certbot-webroot:/var/www/certbot
+      - certs:/etc/letsencrypt
+    depends_on:
+      - gateway
+      - portal
+    networks:
+      - hapo-net
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certs:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done'"
+    networks:
+      - hapo-net
+
+volumes:
+  mysql-data:
+  redis-data:
+  cliproxy-auth:
+  certs:
+  certbot-webroot:
+
+networks:
+  hapo-net:
+    driver: bridge

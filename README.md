@@ -54,10 +54,13 @@ hapo-ai-hub-infra/
 ├── .env.example                # Config template
 ├── customers/                  # Per-customer configs
 │   ├── staging/
-│   │   └── .env
+│   │   ├── .env.example        # Template (git tracked)
+│   │   └── .env                # Actual secrets (git ignored)
 │   ├── customer-a/
+│   │   ├── .env.example
 │   │   └── .env
 │   └── customer-b/
+│       ├── .env.example
 │       └── .env
 ├── docker/
 │   ├── nginx/                  # Nginx reverse proxy
@@ -72,6 +75,23 @@ hapo-ai-hub-infra/
 │   └── backup.sh               # Backup databases
 └── README.md
 ```
+
+## Customer Setup
+
+Each customer has their own config in `customers/<name>/`:
+
+```bash
+# 1. Copy template
+cp customers/customer-a/.env.example customers/customer-a/.env
+
+# 2. Edit with actual secrets
+vi customers/customer-a/.env
+
+# 3. Deploy for that customer
+./scripts/deploy.sh customer-a
+```
+
+**Note:** `.env` files are git-ignored (contain secrets). Only `.env.example` templates are tracked.
 
 ## Services
 
